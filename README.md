@@ -22,12 +22,13 @@ python main.py
 | Servidor | Vulnerabilidade | Flag |
 |----------|----------------|------|
 | server6.py  | Mass Assignment (PUT /me) | CTF{m4ss_4ss1gnm3nt_0wn3d} |
-| server7.py  | SSTI Jinja2            | - |
-| server8.py  | SSTI filtro bypassado  | - |
-| server9.py  | Hidden params          | - |
+| server7.py  | SSTI Jinja2            | CTF{j1nj42_sst1_fl4sk_pwn} |
+| server8.py  | SSTI filtro bypassado  | CTF{sst1_f1lt3r_byp4ss_succ3ss} |
+| server9.py  | Hidden params          | CTF{h1dd3n_p4r4m_d1sc0v3ry_w1n} |
 | server10.py | JWT HS256 secret fraco | CTF{jwt_secrets_should_not_be_guessable} |
 
-Rodar qualquer servidor: `python server6.py` → `http://localhost:1337`
+Rodar qualquer servidor: `python server7.py` → `http://localhost:1337`
+
 
 ## Changelog v5.6
 
