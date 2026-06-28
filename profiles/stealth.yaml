@@ -1,0 +1,6 @@
+threads: 1
+timeout: 10.0
+retries: 3
+delay: 2.0
+payload_set: standard
+description: Furtivo e resiliente, para ambientes com WAF ou instáveis.

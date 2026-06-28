@@ -1,0 +1,18 @@
+payloads:
+- debug
+- admin
+- show_source
+- config
+- backup
+- secret
+- dev
+- test
+- cmd
+- exec
+- role
+- status
+- file
+- path
+- mode
+- template
+- code

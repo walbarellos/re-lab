@@ -1,0 +1,13 @@
+name: XSS Detection
+description: Detecta reflexao de payloads XSS comuns e tags HTML perigosas na resposta.
+severity: Medium
+confidence: 0.8
+when:
+  contains:
+    - "<script>"
+    - "alert(1)"
+    - "onerror="
+    - "onload="
+    - "javascript:"
+    - "<svg"
+    - "document.cookie"

@@ -1,0 +1,6 @@
+{
+  "id": "v5-architecture",
+  "name": "CTFLab v5.0 Architecture",
+  "status": "active",
+  "description": "DDD, Event-driven, and capability-based framework rewrite"
+}

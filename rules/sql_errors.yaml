@@ -1,0 +1,11 @@
+name: SQL Error Detection
+description: Detecta mensagens de erro comuns de bancos de dados que indicam SQL Injection.
+severity: High
+confidence: 0.95
+when:
+  contains:
+    - "you have an error in your sql syntax"
+    - "mysql_fetch_array"
+    - "postgreSQL query failed"
+    - "unclosed quotation mark after the character string"
+    - "ORA-00933"

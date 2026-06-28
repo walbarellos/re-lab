@@ -1,0 +1,6 @@
+{
+  "id": "v6.1-stabilization",
+  "name": "CTFLab v6.1 Stabilization",
+  "status": "active",
+  "description": "Connecting v6 components and fixing critical audit bugs"
+}

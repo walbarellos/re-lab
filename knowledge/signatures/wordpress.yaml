@@ -1,0 +1,16 @@
+name: WordPress
+description: Detecção e caminhos de poder para o CMS WordPress.
+match:
+  headers:
+    - "wp-json"
+  paths:
+    - "/wp-content"
+    - "/wp-includes"
+expansion:
+  - "/wp-admin"
+  - "/wp-login.php"
+  - "/xmlrpc.php"
+  - "/wp-json"
+  - "/wp-content/debug.log"
+  - "/wp-config.php.bak"
+  - "/readme.html"

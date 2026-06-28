@@ -1,0 +1,15 @@
+name: IDOR / Privilege Escalation Detection
+description: Detecta palavras-chave de privilegio em respostas de objetos (IDOR / mass assignment).
+severity: High
+confidence: 0.7
+when:
+  contains:
+    - '"role": "admin"'
+    - '"admin": true'
+    - '"admin": 1'
+    - '"is_admin": 1'
+    - '"is_admin": true'
+    - '"privilege": "root"'
+    - '"privilege": "admin"'
+    - '"group": "admin"'
+    - "CTF{"

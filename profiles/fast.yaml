@@ -1,0 +1,6 @@
+threads: 50
+timeout: 2.0
+retries: 0
+delay: 0.0
+payload_set: small
+description: Máxima velocidade, foca em encontrar sinais óbvios rapidamente.

@@ -1,0 +1,7 @@
+name: Full Pentest Chain
+description: Executa o ciclo completo do Recon até a Detecção de SQLi.
+steps:
+  - scanner: reconnaissance_fuzzer
+    params: {path: '/', mode: 'get'}
+  - scanner: sqli_detection
+    params: {path: '/login', method: 'POST', param: 'username'}

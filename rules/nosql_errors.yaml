@@ -1,0 +1,11 @@
+name: NoSQL Error Detection
+description: Detecta mensagens de erro comuns de MongoDB/Mongoose que indicam NoSQL Injection.
+severity: High
+confidence: 0.95
+when:
+  contains:
+    - "MongoError:"
+    - "canonical: false"
+    - "operator not supported"
+    - "not authorized on admin"
+    - "$where compile error"

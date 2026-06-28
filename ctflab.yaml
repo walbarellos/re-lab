@@ -1,0 +1,18 @@
+timeout: 10.0
+retries: 2
+threads: 20
+ssl_verify: false
+
+reporting:
+  format: html
+  output_dir: reports
+
+engine:
+  auto_discover: true
+  payloads_dir: payloads
+  rules_dir: rules
+  profiles_dir: profiles
+
+logging:
+  level: INFO
+  file: logs/ctflab.log

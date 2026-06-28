@@ -1,0 +1,13 @@
+payloads:
+  - "admin"
+  - "login"
+  - "api"
+  - "v1"
+  - "v2"
+  - "debug"
+  - "test"
+  - "backup"
+  - "config"
+  - "robots.txt"
+  - ".env"
+  - ".git"

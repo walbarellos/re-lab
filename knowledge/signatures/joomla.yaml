@@ -1,0 +1,17 @@
+name: Joomla
+description: Detecção e caminhos de poder para o CMS Joomla.
+match:
+  headers:
+    - "joomla"
+  paths:
+    - "/components/com_sppagebuilder"
+    - "/media/jui/js"
+    - "/templates/shaper_helixultimate"
+expansion:
+  - "/administrator"
+  - "/administrator/index.php"
+  - "/installation"
+  - "/configuration.php-dist"
+  - "/robots.txt"
+  - "/index.php?option=com_user"
+  - "/language/en-GB/en-GB.ini"

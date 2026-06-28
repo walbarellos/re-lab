@@ -1,0 +1,17 @@
+name: Generic API
+description: Estrutura comum para APIs REST modernas.
+match:
+  headers:
+    - "application/json"
+  paths:
+    - "/api/"
+    - "/rest/"
+    - "/v1/"
+expansion:
+  - "api/v1/users"
+  - "api/v1/auth"
+  - "api/v1/config"
+  - "api/v1/status"
+  - "api/v1/debug"
+  - "api/v1/db"
+  - "graphql"

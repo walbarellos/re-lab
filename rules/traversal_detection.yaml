@@ -1,0 +1,14 @@
+name: Path Traversal Detection
+description: Detecta exposicao de arquivos sensiveis do sistema em respostas HTTP.
+severity: High
+confidence: 0.95
+when:
+  contains:
+    - "root:x:0:0"
+    - "bin/bash"
+    - "bin/sh"
+    - "DB_PASSWORD"
+    - "APP_SECRET"
+    - "SECRET_KEY"
+    - "[boot loader]"
+    - "Windows NT"

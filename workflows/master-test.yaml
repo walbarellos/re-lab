@@ -1,0 +1,13 @@
+name: Master v5.7 Validation Chain
+description: Testa todos os novos scanners e o motor de orquestração.
+steps:
+  - scanner: reconnaissance_fuzzer
+    params: {path: '/', mode: 'get'}
+  - scanner: idor_query_params
+    params: {path: '/', param: 'debug', start: 1, end: 5}
+  - scanner: path_traversal
+    params: {path: '/', param: 'file'}
+  - scanner: mass_assignment
+    params: {path: '/login', method: 'POST'}
+  - scanner: sqli_detection
+    params: {path: '/login', method: 'POST', param: 'username'}
