@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  # Alvo Real: Flask App com falhas reais de SSTI, SQLi, LFI e autogestão de DB SQLite
+  target-app:
+    build:
+      context: ./tests/vulnerable_apps/flask_app
+      dockerfile: Dockerfile
+    container_name: ctflab-target-app
+    ports:
+      - "18889:5000"
+
+  # WAF Real: Proxy Reverso Nginx com ModSecurity WAF e OWASP Core Rule Set ativo
+  waf-gateway:
+    image: owasp/modsecurity-crs:nginx
+    container_name: ctflab-waf-gateway
+    environment:
+      - PARANOIA=1
+      - BACKEND=http://target-app:5000
+    ports:
+      - "18888:80"
