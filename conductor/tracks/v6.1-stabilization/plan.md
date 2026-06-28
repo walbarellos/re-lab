@@ -12,5 +12,5 @@
 - [x] 2.3. Attack Graph population: Ensure the graph is built during execution. (Done)
 
 ## Priority 3: Arsenal Polish
-- [ ] 3.1. Traversal Refinement: Remove broad `len > 100` threshold in `path_traversal`.
-- [ ] 3.2. Plugin API Cleanup: Fix `H._make_client` in `plugins/xss.py`.
+- [x] 3.1. Traversal Refinement: Remove broad `len > 100` threshold in `path_traversal`. (Done)
+- [x] 3.2. Plugin API Cleanup: Fix `H._make_client` in `plugins/xss.py`. (Done)

@@ -28,7 +28,7 @@ def run(session: Session, console: Console) -> None:
     )
 
     hits = 0
-    with H._make_client(session) as cl:
+    with H.make_client(session) as cl:
         for p in payloads:
             try:
                 if use_get:

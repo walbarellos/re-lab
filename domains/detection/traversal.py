@@ -31,11 +31,32 @@ class TraversalScanner(BaseScanner):
         return H.get(self.ctx.session, self.path, params={self.param: payload})
 
     def analyze(self, payload: str, response: Any) -> ScanResult:
-        # Detecta hit se retornar etc/passwd ou se o status for 200 com tamanho suspeito
-        if "root:x:0:0" in response.text or (response.status_code == 200 and len(response.text) > 100):
+        # Detecta se retornou conteúdo de arquivos de sistema comuns ou flags
+        text = response.text
+        is_hit = False
+
+        # Assinaturas comuns de arquivos do sistema (Unix/Windows) e hosts
+        system_sigs = [
+            "root:x:0:0",
+            "daemon:x:1:1",
+            "bin:x:2:2",
+            "[boot loader]",
+            "default=multi(0)",
+            "127.0.0.1 localhost",
+        ]
+
+        if any(sig in text for sig in system_sigs):
+            is_hit = True
+        else:
+            # Verifica se vazou alguma flag no conteúdo do arquivo
+            from ctflab.core.intel import _FLAG_RE
+            if _FLAG_RE.search(text):
+                is_hit = True
+
+        if is_hit:
             return ScanResult(
                 success=True,
-                confidence=0.9,
+                confidence=0.95,
                 details=f"Hit com payload: {payload}",
                 severity="High"
             )
