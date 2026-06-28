@@ -204,6 +204,54 @@ def _export(s: Session, c: Console) -> None:
     c.print(f"[ok]sessão exportada: {path.resolve()}[/ok]")
 
 
+def _generate_html_report(s: Session, c: Console) -> None:
+    from ctflab.reports.html import HTMLReportGenerator
+    try:
+        generator = HTMLReportGenerator()
+        path = generator.generate(s)
+        c.print(f"[ok]Relatório HTML gerado com sucesso em: {path.resolve()}[/ok]")
+    except Exception as exc:
+        c.print(f"[fail]Falha ao gerar relatório: {exc}[/fail]")
+
+
+def _set_proxy(s: Session, c: Console) -> None:
+    current = getattr(s, "proxy", "") or ""
+    new_proxy = ask("endereço do proxy (ex: http://127.0.0.1:8080 ou socks5://127.0.0.1:1080, enter para desativar)", current)
+    if not new_proxy.strip():
+        s.proxy = None
+        c.print("[ok]Proxy desativado.[/ok]")
+    else:
+        s.proxy = new_proxy.strip()
+        c.print(f"[ok]Proxy configurado: {s.proxy}[/ok]")
+
+
+def _toggle_waf_bypass(s: Session, c: Console) -> None:
+    s.waf_bypass = not getattr(s, "waf_bypass", False)
+    status = "[ok]ATIVADO (Injeção de Cabeçalhos Locais)[/ok]" if s.waf_bypass else "[fail]DESATIVADO[/fail]"
+    c.print(f"WAF Bypass / IP Spoofing: {status}")
+
+
+def _reverse_shell(s: Session, c: Console) -> None:
+    from ctflab.domains.exploitation.reverse_shell import run as run_revshell
+    run_revshell(s, c)
+
+
+def _payload_encoder(s: Session, c: Console) -> None:
+    from ctflab.core.encoder import encode_all_formats
+    payload = ask("Digite o payload original que deseja codificar")
+    if not payload.strip():
+        return
+    
+    encoded_formats = encode_all_formats(payload)
+    c.print("\n" + "="*60)
+    c.print("[ok]PAYLOADS CODIFICADOS (WAF EVASION)[/ok]")
+    c.print("="*60)
+    for name, value in encoded_formats.items():
+        c.print(f"[info]{name}:[/info]")
+        c.print(f"  {value}", style="bold yellow")
+    c.print("="*60 + "\n")
+
+
 _OPTIONS = {
     "1": ("histórico de requisições",  _history),
     "2": ("notas da sessão",           _notes),
@@ -217,8 +265,17 @@ _OPTIONS = {
     "a": ("adicionar header fixo",     _add_header),
     "b": ("remover header",            _remove_header),
     "e": ("exportar sessão JSON",      _export),
+    "g": ("gerar relatório HTML",      _generate_html_report),
+    "p": ("configurar proxy",          _set_proxy),
+    "w": ("toggle WAF bypass (IP spoof)", _toggle_waf_bypass),
+    "r": ("gerador de reverse shell",   _reverse_shell),
+    "c": ("codificador / evasão WAF",   _payload_encoder),
     "0": ("voltar",                    None),
 }
+
+
+
+
 
 
 def run(session: Session, console: Console) -> None:

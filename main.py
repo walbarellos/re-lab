@@ -155,11 +155,12 @@ if __name__ == "__main__":
         wf.run_workflow(args.run)
 
         # 📊 EXIBIÇÃO DE RESULTADOS v5.5
-        from ctflab.core.scoring import ScoringEngine
-        risk = ScoringEngine.calculate_session_score(session.vulnerabilities)
+        risk_report = ScoringEngine.calculate_session_score(session.vulnerabilities)
+        risk = risk_report["total_threat"]
         summary = ctx.metrics.get_summary()
         console.rule("[head]RESUMO DA OPERAÇÃO[/head]")
         console.print(f"  [info]Risco Alvo:[/info]  [flag] {risk} / 10.0 [/flag]")
+
         console.print(f"  [info]Requisições:[/info] {summary['total_requests']}")
         console.print(f"  [info]Duração:[/info]      {summary['duration_seconds']}s")
 

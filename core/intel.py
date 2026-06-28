@@ -30,6 +30,21 @@ _FLAG_RE   = re.compile(r'(?:CTF|FLAG|HTB|picoCTF|DUCTF)\{[^}]+\}', re.IGNORECAS
 _TOKEN_HEX_RE = re.compile(r'\b[0-9a-f]{32,64}\b', re.IGNORECASE)
 _TOKEN_B64_RE = re.compile(r'[A-Za-z0-9+/]{32,}={0,2}')
 
+# 🕵️ REGEX CSRF (Para testes e competições online)
+_CSRF_INPUT_RE1 = re.compile(
+    r'<input[^>]+(?:name|id)\s*=\s*["\'](?:csrf_token|_csrf|csrf|xsrf_token|csrf-token)["\'][^>]+value\s*=\s*["\']([^"\']+)["\']',
+    re.IGNORECASE
+)
+_CSRF_INPUT_RE2 = re.compile(
+    r'<input[^>]+value\s*=\s*["\']([^"\']+)["\'][^>]+(?:name|id)\s*=\s*["\'](?:csrf_token|_csrf|csrf|xsrf_token|csrf-token)["\']',
+    re.IGNORECASE
+)
+_CSRF_META_RE = re.compile(
+    r'<meta[^>]+(?:name|property)\s*=\s*["\'](?:csrf-token|csrf-param|xsrf-token)["\'][^>]+content\s*=\s*["\']([^"\']+)["\']',
+    re.IGNORECASE
+)
+
+
 def _flatten_values(obj: Any) -> list[str]:
     out: list[str] = []
     if isinstance(obj, dict):
@@ -228,6 +243,109 @@ def analyze(
         set_cookie = headers.get("set-cookie", "")
         if set_cookie:
             for m in re.finditer(r'([^=;\s]+)=([^;]{4,})', set_cookie):
-                session.remember(f"cookie_{m.group(1)}", m.group(2))
+                cookie_name, cookie_val = m.group(1), m.group(2)
+                session.remember(f"cookie_{cookie_name}", cookie_val)
+                # Verifica se é um cookie de CSRF/XSRF
+                if any(x in cookie_name.lower() for x in ("csrf", "xsrf")):
+                    session.remember("csrf_token", cookie_val)
+
+    # 🕵️ Extração passiva de CSRF Token no corpo HTML
+    csrf_token = None
+    m_meta = _CSRF_META_RE.search(body)
+    if m_meta:
+        csrf_token = m_meta.group(1)
+    else:
+        m_input1 = _CSRF_INPUT_RE1.search(body)
+        if m_input1:
+            csrf_token = m_input1.group(1)
+        else:
+            m_input2 = _CSRF_INPUT_RE2.search(body)
+            if m_input2:
+                csrf_token = m_input2.group(1)
+
+    if csrf_token:
+        session.remember("csrf_token", csrf_token)
+        # Tenta descobrir o nome exato do campo esperado
+        if "_csrf" in body.lower():
+            session.remember("csrf_param_name", "_csrf")
+        elif "csrf_token" in body.lower():
+            session.remember("csrf_param_name", "csrf_token")
+        elif "xsrf_token" in body.lower():
+            session.remember("csrf_param_name", "xsrf_token")
+        else:
+            session.remember("csrf_param_name", "csrf")
+
+
+    # ── passive technology signatures ─────────────────────────
+    global _PASSIVE_SIGNATURES
+    if "_PASSIVE_SIGNATURES" not in globals():
+        _PASSIVE_SIGNATURES = []
+        try:
+            from pathlib import Path
+            import yaml
+            sigs_dir = Path(__file__).parent.parent / "knowledge" / "signatures"
+            if sigs_dir.exists():
+                for file_path in sigs_dir.glob("*.yaml"):
+                    try:
+                        with open(file_path, "r") as f:
+                            sig_data = yaml.safe_load(f)
+                            if sig_data and isinstance(sig_data, dict):
+                                _PASSIVE_SIGNATURES.append(sig_data)
+                    except Exception as e:
+                        logger.error(f"Erro ao carregar assinatura passiva {file_path}: {e}")
+        except Exception as e:
+            logger.error(f"Erro ao inicializar assinaturas passivas: {e}")
+
+    matched_any = False
+    for sig in _PASSIVE_SIGNATURES:
+        matched = False
+        sig_name = sig.get("name", "")
+        
+        # 1. Match por URL/Path da requisição atual
+        if last_req:
+            req_path = last_req.url.lower()
+            for match_path in sig.get("match", {}).get("paths", []):
+                if match_path.lower() in req_path:
+                    matched = True
+                    break
+
+        # 2. Match por Headers
+        if not matched and headers:
+            for match_h in sig.get("match", {}).get("headers", []):
+                match_h_lower = match_h.lower()
+                for hk, hv in headers.items():
+                    if match_h_lower in hk.lower() or match_h_lower in str(hv).lower():
+                        matched = True
+                        break
+        
+        # 3. Match por Body (fallback inteligente para assinaturas)
+        if not matched and body:
+            sig_lower = sig_name.lower()
+            if sig_lower == "wordpress" and ("wp-content" in body or "wp-includes" in body):
+                matched = True
+            elif sig_lower == "joomla" and ("joomla" in body.lower() or "option=com_" in body):
+                matched = True
+
+        if matched:
+            matched_any = True
+            # Adiciona à lista de tecnologias da sessão
+            if sig_name not in session._technologies:
+                session._technologies.append(sig_name)
+                logger.info(f"Intel Engine: Tecnologia/Stack '{sig_name}' identificada passivamente.")
+
+            # Também salva no session.ctx para que o StackClassifier de rodadas seguintes saiba
+            session.remember(f"tech_{sig_name}", sig_name)
+
+            # Expande caminhos se houver
+            for exp_path in sig.get("expansion", []):
+                if not exp_path.startswith("/"):
+                    exp_path = "/" + exp_path
+                if exp_path not in discovered_endpoints:
+                    discovered_endpoints.add(exp_path)
+                    logger.info(f"Intel Engine: Rota de poder '{exp_path}' identificada passivamente para '{sig_name}'.")
+
+    if matched_any:
+        session.remember("_all_discovered_endpoints", list(discovered_endpoints))
 
     return {}
+

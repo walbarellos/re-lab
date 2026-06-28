@@ -17,6 +17,8 @@ from .session import RequestRecord, Session
 from .intel import analyze as intel_analyze
 from .fingerprint import Fingerprinter as _Fingerprinter
 from .models import Target as _Target
+from .waf import WafDetector
+
 
 _fingerprinter = _Fingerprinter()  # singleton — instanciar uma vez
 
@@ -46,12 +48,40 @@ def make_client(session: Session) -> httpx.Client:
     headers.setdefault("Sec-Fetch-Site", "none")
     headers.setdefault("Sec-Fetch-User", "?1")
 
+    # 🛡️ WAF Bypass / IP Spoofing (Essencial para bypass local e rate-limits em CTFs)
+    if getattr(session, "waf_bypass", False):
+        spoofed_ip = "127.0.0.1"
+        headers.setdefault("X-Forwarded-For", spoofed_ip)
+        headers.setdefault("X-Originating-IP", spoofed_ip)
+        headers.setdefault("X-Real-IP", spoofed_ip)
+        headers.setdefault("X-Remote-IP", spoofed_ip)
+        headers.setdefault("X-Remote-Addr", spoofed_ip)
+        headers.setdefault("X-Client-IP", spoofed_ip)
+        headers.setdefault("Client-IP", spoofed_ip)
+
+    # 🍪 Cookie Session Persistence
+    cookies_list = [f"{ck[7:]}={cv}" for ck, cv in session.ctx.items() if ck.startswith("cookie_") and isinstance(cv, str)]
+    if cookies_list:
+        existing_cookie = headers.get("Cookie", "")
+        if existing_cookie:
+            headers["Cookie"] = existing_cookie.rstrip("; ") + "; " + "; ".join(cookies_list)
+        else:
+            headers["Cookie"] = "; ".join(cookies_list)
+
+    # 🛡️ CSRF Token Injection
+    csrf_token = session.recall("csrf_token", "")
+    if csrf_token:
+        headers.setdefault("X-CSRF-Token", csrf_token)
+        headers.setdefault("X-CSRFToken", csrf_token)
+        headers.setdefault("X-XSRF-TOKEN", csrf_token)
+
     return httpx.Client(
         base_url=session.target,
         headers=headers,
         timeout=session.timeout,
         follow_redirects=True,
         verify=session.ssl,
+        proxy=session.proxy,
     )
 
 
@@ -64,13 +94,43 @@ def make_async_client(session: Session) -> httpx.AsyncClient:
     headers.setdefault("Sec-Ch-Ua-Mobile", "?0")
     headers.setdefault("Sec-Ch-Ua-Platform", '"Windows"')
 
+    # 🛡️ WAF Bypass / IP Spoofing (Essencial para bypass local e rate-limits em CTFs)
+    if getattr(session, "waf_bypass", False):
+        spoofed_ip = "127.0.0.1"
+        headers.setdefault("X-Forwarded-For", spoofed_ip)
+        headers.setdefault("X-Originating-IP", spoofed_ip)
+        headers.setdefault("X-Real-IP", spoofed_ip)
+        headers.setdefault("X-Remote-IP", spoofed_ip)
+        headers.setdefault("X-Remote-Addr", spoofed_ip)
+        headers.setdefault("X-Client-IP", spoofed_ip)
+        headers.setdefault("Client-IP", spoofed_ip)
+
+    # 🍪 Cookie Session Persistence
+    cookies_list = [f"{ck[7:]}={cv}" for ck, cv in session.ctx.items() if ck.startswith("cookie_") and isinstance(cv, str)]
+    if cookies_list:
+        existing_cookie = headers.get("Cookie", "")
+        if existing_cookie:
+            headers["Cookie"] = existing_cookie.rstrip("; ") + "; " + "; ".join(cookies_list)
+        else:
+            headers["Cookie"] = "; ".join(cookies_list)
+
+    # 🛡️ CSRF Token Injection
+    csrf_token = session.recall("csrf_token", "")
+    if csrf_token:
+        headers.setdefault("X-CSRF-Token", csrf_token)
+        headers.setdefault("X-CSRFToken", csrf_token)
+        headers.setdefault("X-XSRF-TOKEN", csrf_token)
+
     return httpx.AsyncClient(
         base_url=session.target,
         headers=headers,
         timeout=session.timeout,
         follow_redirects=True,
         verify=session.ssl,
+        proxy=session.proxy,
     )
+
+
 
 
 # aliases de retrocompatibilidade
@@ -102,7 +162,10 @@ def _record(
     intel_analyze(session, r.text, r.status_code, dict(r.headers))
 
     # 🕵️ INTEGRAÇÃO FINGERPRINT: Detecta stack (v6.1.1 — Persistent)
-    _fingerprinter.analyze(r, _Target(base_url=session.target, technologies=session._technologies))
+    _fingerprinter.analyze(r, _Target(base_url=session.target, technologies=session._technologies), session)
+
+    # 🛡️ INTEGRAÇÃO WAF: Identifica firewalls e adapta comportamento
+    WafDetector.detect_and_adapt(session, r.text, r.status_code, dict(r.headers))
 
     return rec
 
@@ -115,12 +178,16 @@ def _request(
     payload: Any = None,
     params: dict | None = None,
     form: bool = False,
-    retries: int = _DEFAULT_RETRY,
+    retries: int | None = None,
     headers: dict | None = None,
     raw: bool = False,
     use_cache: bool | None = None,
 ) -> httpx.Response:
     method    = method.upper()
+    
+    if retries is None:
+        retries = getattr(session, "retries", _DEFAULT_RETRY)
+
     
     # 🧠 CACHE POLICY: Só cacheia GET por padrão. Outros métodos requerem flag explícita.
     if use_cache is None:
@@ -140,9 +207,18 @@ def _request(
             with make_client(session) as c:
                 start       = time.perf_counter()
                 req_headers = headers or {}
+                csrf_token = session.recall("csrf_token", "")
                 kwargs: dict = {"params": params or {}}
 
+
                 if payload is not None:
+                    # Injeta CSRF no corpo de requisições de alteração (JSON/Form)
+                    if isinstance(payload, dict) and method in ("POST", "PUT", "PATCH", "DELETE") and csrf_token:
+                        payload = dict(payload) # Evita alterar in-place o dicionário original
+                        csrf_param = session.recall("csrf_param_name", "csrf_token")
+                        if csrf_param not in payload:
+                            payload[csrf_param] = csrf_token
+
                     if raw:
                         kwargs["content"] = str(payload)
                     elif form:
@@ -155,8 +231,20 @@ def _request(
                         ):
                             req_headers["Content-Type"] = "application/json"
 
+
                 r       = c.request(method, path, headers=req_headers, **kwargs)
                 elapsed = time.perf_counter() - start
+
+                # Se o servidor retornar rate limit (429) ou erro temporário (503), faz backoff inteligente
+                if r.status_code in (429, 503) and attempt < retries:
+                    retry_after = r.headers.get("Retry-After", "")
+                    try:
+                        sleep_time = float(retry_after)
+                    except ValueError:
+                        sleep_time = _BACKOFF_BASE * (2 ** attempt)
+                    sleep_time += random.uniform(0.1, 0.4) # Jitter
+                    time.sleep(sleep_time)
+                    continue
 
             # 🕵️ HUMAN JITTER: Se estiver em modo stealth, espera um pouco entre requisições
             if getattr(session, "stealth_mode", False):
@@ -177,6 +265,7 @@ def _request(
                 time.sleep(_BACKOFF_BASE * (2 ** attempt))
 
     raise last_exc  # type: ignore[misc]
+
 
 
 def get(session, path="/", params=None, payload=None, retries=_DEFAULT_RETRY, headers=None, use_cache=True):

@@ -58,7 +58,12 @@ class BaseScanner(ABC):
         self.ctx.metrics.start_module(self.name)
 
         profile = self.ctx.profiles.active_profile
+        # Sincroniza configurações de tempo/retentativas do perfil com a sessão
+        self.ctx.session.timeout = profile.timeout
+        self.ctx.session.retries = profile.retries
+
         semaphore = asyncio.Semaphore(profile.threads)
+
 
         found_vulns = []
         payloads = list(self.get_payloads())

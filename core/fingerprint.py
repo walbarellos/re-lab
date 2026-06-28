@@ -31,7 +31,7 @@ class Fingerprinter:
         }
     }
 
-    def analyze(self, response: httpx.Response, target: Target) -> Target:
+    def analyze(self, response: httpx.Response, target: Target, session: Any = None) -> Target:
         """Extrai tecnologias da resposta HTTP."""
         headers = response.headers
         
@@ -53,4 +53,10 @@ class Fingerprinter:
             # Heurística fraca, mas comum em CTF
             target.technologies.append("Python/Flask")
 
+        # 3. Salva as tecnologias identificadas no contexto da sessão (session.ctx)
+        if session:
+            for tech in target.technologies:
+                session.remember(f"tech_{tech}", tech)
+
         return target
+

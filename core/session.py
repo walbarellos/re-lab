@@ -49,7 +49,12 @@ class Session:
 
     target:          str       = "http://localhost:1337"
     timeout:         float     = 10.0
+    retries:         int       = 2
     ssl:             bool      = False
+    proxy:           str | None = None
+    waf_bypass:      bool      = False
+
+
     headers:         dict      = field(default_factory=dict)
     history:         list      = field(default_factory=list)   # list[RequestRecord]
     notes:           list[str] = field(default_factory=list)
@@ -106,6 +111,10 @@ class Session:
         p = Path(path)
         data = {
             "target":  self.target,
+            "timeout": self.timeout,
+            "retries": self.retries,
+            "proxy":   self.proxy,
+            "waf_bypass": self.waf_bypass,
             "flags":   self.flags,
             "notes":   self.notes,
             "ctx":     self.ctx,
@@ -138,7 +147,15 @@ class Session:
     def load(cls, path: str | Path) -> "Session":
         from .models import Evidence
         data = json.loads(Path(path).read_text())
-        s = cls(target=data.get("target", "http://localhost:1337"))
+        s = cls(
+            target=data.get("target", "http://localhost:1337"),
+            timeout=data.get("timeout", 10.0),
+            retries=data.get("retries", 2),
+            proxy=data.get("proxy", None),
+            waf_bypass=data.get("waf_bypass", False)
+        )
+
+
         s.notes = data.get("notes", [])
         s.flags = data.get("flags", [])
         s.ctx   = data.get("ctx", {})

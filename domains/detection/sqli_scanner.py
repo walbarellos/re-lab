@@ -46,7 +46,9 @@ class SQLiScanner(BaseScanner):
             return ScanResult(
                 success=True, 
                 confidence=best_rule.confidence,
-                details=f"Hit via regra: {best_rule.name} - {best_rule.description}"
+                details=f"Hit via regra: {best_rule.name} - {best_rule.description}",
+                severity=best_rule.severity
             )
             
         return ScanResult(success=False, confidence=0.0, details="Nenhum sinal detectado")
+
