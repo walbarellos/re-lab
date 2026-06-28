@@ -65,8 +65,72 @@ class BaseScanner(ABC):
         semaphore = asyncio.Semaphore(profile.threads)
 
 
+        # Captura baseline para evitar falsos positivos
+        baseline_hits = set()
+        try:
+            loop = asyncio.get_event_loop()
+            base_resp = await loop.run_in_executor(None, self.get_baseline)
+            if base_resp:
+                # Reconstrói um dummy payload compatível com o tipo de get_payloads()
+                first_payload = next(iter(self.get_payloads()), "")
+                if isinstance(first_payload, tuple):
+                    dummy_payload = tuple("" for _ in first_payload)
+                elif isinstance(first_payload, list):
+                    dummy_payload = list("" for _ in first_payload)
+                elif isinstance(first_payload, dict):
+                    dummy_payload = {k: "" for k in first_payload.keys()}
+                elif isinstance(first_payload, int):
+                    dummy_payload = 0
+                elif isinstance(first_payload, float):
+                    dummy_payload = 0.0
+                else:
+                    dummy_payload = ""
+
+                base_res = self.analyze(dummy_payload, base_resp)
+                if base_res.success:
+                    baseline_hits.add(base_res.details)
+                    self.ctx.log_info(f"Scanner {self.name}: Assinatura de baseline adicionada para suprimir falso positivo: {base_res.details}")
+        except Exception as e:
+            self.ctx.log_info(f"Falha ao obter baseline em {self.name}: {e}")
+
         found_vulns = []
         payloads = list(self.get_payloads())
+        
+        # Função auxiliar para extrair apenas as strings brutas de payloads complexos
+        # Evita falso positivo de WAF blocks causados pela formatação do Python (como parênteses em tuplas)
+        def _get_payload_strings(val: Any) -> list[str]:
+            if isinstance(val, (str, int, float, bool)) or val is None:
+                return [str(val)]
+            elif isinstance(val, (list, tuple, set)):
+                res = []
+                for item in val:
+                    res.extend(_get_payload_strings(item))
+                return res
+            elif isinstance(val, dict):
+                res = []
+                for k, v in val.items():
+                    res.extend(_get_payload_strings(k))
+                    res.extend(_get_payload_strings(v))
+                return res
+            return [str(val)]
+
+        # Filtra payloads baseando-se em caracteres bloqueados na sessão (Evasão Adaptativa)
+        filtered_payloads = []
+        for p in payloads:
+            p_strings = _get_payload_strings(p)
+            blocked_in_payload = False
+            for char in ["'", "\"", " ", "(", ")", ";", "{", "}", "[", "]", "<", ">"]:
+                if self.ctx.session.recall(f"blocked_char_{char}", False):
+                    # Verifica se o caractere realmente faz parte dos valores do payload
+                    if any(char in s for s in p_strings):
+                        blocked_in_payload = True
+                        break
+            if not blocked_in_payload:
+                filtered_payloads.append(p)
+            else:
+                self.ctx.log_info(f"Scanner {self.name}: Payload omitido por conter caracteres proibidos pelo WAF.")
+        
+        payloads = filtered_payloads
         requests_sent = 0
         errors_occurred = 0
 
@@ -83,7 +147,8 @@ class BaseScanner(ABC):
                     response = await loop.run_in_executor(None, self.execute, p)
                     result = self.analyze(p, response)
 
-                    if result.success:
+                    # Evita falsos positivos comparando com a assinatura da baseline
+                    if result.success and result.details not in baseline_hits:
                         severity = getattr(result, "severity", "Medium")
                         evidence = Evidence(
                             module=self.name,
@@ -108,6 +173,8 @@ class BaseScanner(ABC):
                     errors_occurred += 1
                     self.ctx.log_error(f"Erro em {self.name} com payload {p}: {exc}")
             return None
+
+
 
         # Dispara todas as tasks respeitando o semáforo
         tasks = [asyncio.create_task(_worker(p)) for p in payloads]

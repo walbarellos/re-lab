@@ -61,6 +61,7 @@ class WafCharFuzzer(BaseScanner):
     def analyze(self, payload: str, response: Any) -> ScanResult:
         char = str(payload)
         if not response:
+            self.ctx.session.remember(f"blocked_char_{char}", True)
             return ScanResult(
                 success=True, confidence=0.8, severity="Medium",
                 details=f"Caractere '{char}' causou erro de conexão ou timeout (Possível bloqueio de IPS/WAF)"
@@ -68,6 +69,7 @@ class WafCharFuzzer(BaseScanner):
 
         # Se o status code mudar para códigos de bloqueio clássicos
         if response.status_code in (400, 403, 406, 429) and response.status_code != self.baseline_status:
+            self.ctx.session.remember(f"blocked_char_{char}", True)
             return ScanResult(
                 success=True, confidence=1.0, severity="Medium",
                 details=f"Caractere '{char}' BLOQUEADO. Status HTTP: {response.status_code} (Baseline era {self.baseline_status})"
@@ -78,9 +80,11 @@ class WafCharFuzzer(BaseScanner):
         if self.baseline_len > 0:
             diff_ratio = abs(body_len - self.baseline_len) / self.baseline_len
             if diff_ratio > 0.5 and response.status_code != self.baseline_status:
+                self.ctx.session.remember(f"blocked_char_{char}", True)
                 return ScanResult(
                     success=True, confidence=0.9, severity="Low",
                     details=f"Caractere '{char}' causou resposta diferencial abrupta (Tamanho: {body_len} vs Baseline: {self.baseline_len})"
                 )
 
         return ScanResult(success=False, confidence=0.0, details=f"Caractere '{char}' aceito sem restrições visíveis")
+
