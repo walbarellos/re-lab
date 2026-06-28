@@ -14,8 +14,11 @@ class PayloadManager:
     """
     Centraliza o carregamento de payloads estruturados.
     """
-    def __init__(self, root_dir: str = "payloads"):
-        self.root_dir = Path(root_dir)
+    def __init__(self, root_dir: str | Path | None = None):
+        if root_dir is None:
+            self.root_dir = Path(__file__).parent.parent / "payloads"
+        else:
+            self.root_dir = Path(root_dir)
         self.root_dir.mkdir(exist_ok=True)
 
     def load(self, category: str) -> List[str]:

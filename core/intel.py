@@ -109,6 +109,14 @@ def analyze(
     if scripts:
         from urllib.parse import urlparse
         target_netloc = urlparse(session.target).netloc
+        seen_js = session._visited_js
+
+        # Deduplica a lista inicial para evitar processar a mesma string no regex
+        unique_scripts = []
+        for s in scripts:
+            if s not in unique_scripts:
+                unique_scripts.append(s)
+        scripts = unique_scripts
 
         with httpx.Client(verify=False, timeout=3.0) as client:
             for js_url in scripts:
@@ -123,9 +131,9 @@ def analyze(
                 else:
                     full_url = session.target.rstrip("/") + "/" + js_url.lstrip("/")
                 
-                if full_url in session._visited_js:
+                if full_url in seen_js:
                     continue
-                session._visited_js.add(full_url)
+                seen_js.add(full_url)
 
                 try:
                     js_resp = client.get(full_url)
@@ -139,8 +147,13 @@ def analyze(
                                 session.remember(f"js_hint_{hint}", hint)
                                 discovered_endpoints.add(hint)
                                 all_strings.append(hint)
-                                if hint.endswith(".js") and hint not in scripts:
-                                    scripts.append(hint)
+                                if hint.endswith(".js"):
+                                    if hint.startswith("http"):
+                                        full_hint = hint
+                                    else:
+                                        full_hint = session.target.rstrip("/") + "/" + hint.lstrip("/")
+                                    if full_hint not in seen_js and hint not in scripts:
+                                        scripts.append(hint)
 
                         # SECRET HUNTER
                         secrets_regex = r"(?i)(?:key|password|secret|token|auth|admin|credential|access_key)['\"]\s*[:=]\s*['\"]([^\"'>\s]{4,})['\"]"

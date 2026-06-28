@@ -83,7 +83,13 @@ class AutoPilot:
                     logger.info("AutoPilot: subdomain fuzzer ignorado (localhost/IP direto)")
 
             # Fase 3: Classification & Attack
-            spider_hints = "\n".join([f"GET {p}" for p in all_eps])
+            spider_hints_list = []
+            for p in all_eps:
+                spider_hints_list.append(f"GET {p}")
+                spider_hints_list.append(f"POST {p}")
+                spider_hints_list.append(f"PUT {p}")
+                spider_hints_list.append(f"DELETE {p}")
+            spider_hints = "\n".join(spider_hints_list)
             classify_body = body + "\n" + spider_hints
             candidates = self.clf.classify(classify_body, headers, status)
 

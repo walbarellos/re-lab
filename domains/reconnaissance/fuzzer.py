@@ -55,7 +55,15 @@ class ParameterFuzzer(BaseScanner):
         if found_count:
             console.print(f"  [ok]Super-Discovery: {found_count} novos alvos identificados.[/ok]")
 
-        # 2. Fuzzing de parâmetros
+        # 2. Estabelecer o baseline de forma síncrona e determinística
+        if self.mode == "get":
+            r = H.get(self.ctx.session, self.path, params={}, use_cache=False)
+        else:
+            r = H.post(self.ctx.session, self.path, payload={}, use_cache=False)
+        self._baseline_len = len(r.text)
+        self._baseline_status = r.status_code
+
+        # 3. Fuzzing de parâmetros
         return super().run()
 
     def get_payloads(self) -> Iterable[str]:
@@ -68,15 +76,9 @@ class ParameterFuzzer(BaseScanner):
         test_val = "fuzz_test_1337"
 
         if self.mode == "get":
-            r = H.get(self.ctx.session, self.path, params={payload: test_val}, use_cache=False)
+            return H.get(self.ctx.session, self.path, params={payload: test_val}, use_cache=False)
         else:
-            r = H.post(self.ctx.session, self.path, payload={payload: test_val}, use_cache=False)
-
-        if not self._baseline_status:
-            self._baseline_len = len(r.text)
-            self._baseline_status = r.status_code
-
-        return r
+            return H.post(self.ctx.session, self.path, payload={payload: test_val}, use_cache=False)
 
     def analyze(self, payload: str, response: Any) -> ScanResult:
         delta = abs(len(response.text) - self._baseline_len)

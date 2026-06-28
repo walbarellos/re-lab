@@ -23,8 +23,11 @@ class RuleEngine:
     """
     Carrega e avalia regras declarativas em YAML.
     """
-    def __init__(self, rules_dir: str = "rules"):
-        self.rules_dir = Path(rules_dir)
+    def __init__(self, rules_dir: str | Path | None = None):
+        if rules_dir is None:
+            self.rules_dir = Path(__file__).parent.parent / "rules"
+        else:
+            self.rules_dir = Path(rules_dir)
         self.rules_dir.mkdir(exist_ok=True)
         self.rules: List[DetectionRule] = []
         self.load_rules()

@@ -21,8 +21,11 @@ class ExecutionProfile:
     payload_set: str = "standard"  # small, standard, full
 
 class ProfileManager:
-    def __init__(self, profiles_dir: str = "profiles"):
-        self.profiles_dir = Path(profiles_dir)
+    def __init__(self, profiles_dir: str | Path | None = None):
+        if profiles_dir is None:
+            self.profiles_dir = Path(__file__).parent.parent / "profiles"
+        else:
+            self.profiles_dir = Path(profiles_dir)
         self.profiles_dir.mkdir(exist_ok=True)
         self.active_profile = ExecutionProfile(name="default")
 
