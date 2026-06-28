@@ -8,15 +8,32 @@ if TYPE_CHECKING:
 class KnowledgeBase:
     def __init__(self):
         self._facts = defaultdict(list)
+        self._session = None
+
+    def bind_session(self, session: "Session") -> None:
+        self._session = session
+        # Se a sessão já possui fatos salvos no ctx, restaura-os
+        saved_facts = session.ctx.get("_kb_facts")
+        if saved_facts:
+            # Reconverte o dict simples para defaultdict(list)
+            self._facts = defaultdict(list, saved_facts)
+        else:
+            session.ctx["_kb_facts"] = dict(self._facts)
 
     def remember(self, key, value):
         if value not in self._facts[key]:
             self._facts[key].append(value)
+            if self._session:
+                self._session.ctx["_kb_facts"] = dict(self._facts)
 
     def recall(self, key):
+        if self._session and "_kb_facts" in self._session.ctx:
+            self._facts = defaultdict(list, self._session.ctx["_kb_facts"])
         return list(self._facts.get(key, []))
 
     def export(self):
+        if self._session and "_kb_facts" in self._session.ctx:
+            return dict(self._session.ctx["_kb_facts"])
         return dict(self._facts)
 
     def sync_from_session(self, session: "Session") -> None:

@@ -63,6 +63,7 @@ class Session:
     # 🕵️ Stealth Config (v6.1.1)
     stealth_mode:    bool      = True
     user_agent:      str       = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    _bus:            Any       = field(default=None, init=False, repr=False)
 
     # ── mutações ──────────────────────────────────────────────
 
@@ -87,6 +88,9 @@ class Session:
         if value not in self.flags:
             self.flags.append(value)
             self.note(f"FLAG: {value}")
+            if self._bus:
+                from .events import FlagCaptured
+                self._bus.publish(FlagCaptured(flag=value))
 
     # ── contexto descoberto ───────────────────────────────────
 

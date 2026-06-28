@@ -73,6 +73,7 @@ _BODY_SIGNALS: list[tuple[re.Pattern, str, float, dict]] = [
 _CONTENT_TYPE_SIGNALS: list[tuple[str, str, float, dict]] = [
     ("application/xml", "xxe", 0.9, {}),
     ("text/xml",        "xxe", 0.9, {}),
+    ("application/graphql", "graphql_detection", 0.9, {"path": "/graphql"}),
 ]
 
 _HEADER_SIGNALS: list[tuple[str, re.Pattern, str, float, dict]] = [
@@ -194,3 +195,10 @@ class ResponseClassifier:
         # NoSQLi — endpoint de busca/filtro com POST  ← NOVO
         if re.search(r"POST\s+/(search|filter|entries/search|find)", all_paths, re.I):
             add("nosqli_detection", 0.70, "endpoint de busca POST detectado", {"param": "title"})
+
+        # GraphQL & SSRF em _analyze_json (v6 Connection / Task 2.2)
+        if "graphql" in all_paths.lower():
+            add("graphql_detection", 0.85, "endpoint sugere GraphQL", {"path": "/graphql"})
+
+        if re.search(r"/(proxy|webhook|fetch|forward|request|url)\b", all_paths, re.I):
+            add("ssrf_detection", 0.80, "endpoint sugere SSRF", {"param": "url"})

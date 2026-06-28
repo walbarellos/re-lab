@@ -7,9 +7,9 @@
 - [x] 1.4. Absolute Paths: Fix `RuleEngine` to use absolute paths for rules directory. (Done)
 
 ## Priority 2: Cognitive Integration (v6 Connection)
-- [ ] 2.1. Unified State: Connect `KnowledgeBase` and `Session.ctx`.
-- [ ] 2.2. Classifier Expansion: Add `SSRF` and `GraphQL` signals to `ResponseClassifier`.
-- [ ] 2.3. Attack Graph population: Ensure the graph is built during execution.
+- [x] 2.1. Unified State: Connect `KnowledgeBase` and `Session.ctx`. (Done)
+- [x] 2.2. Classifier Expansion: Add `SSRF` and `GraphQL` signals to `ResponseClassifier`. (Done)
+- [x] 2.3. Attack Graph population: Ensure the graph is built during execution. (Done)
 
 ## Priority 3: Arsenal Polish
 - [ ] 3.1. Traversal Refinement: Remove broad `len > 100` threshold in `path_traversal`.

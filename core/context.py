@@ -39,6 +39,10 @@ class Context:
         self.session._cache = self.cache # type: ignore
         # Inicializa o perfil default
         self.profiles.load_profile("fast")
+        # Conecta a KnowledgeBase com a Session
+        self.knowledge.bind_session(self.session)
+        # Conecta o barramento de mensagens para emissão de eventos
+        self.session._bus = self.bus
     
     def log_info(self, msg: str):
         logger.info(msg)
