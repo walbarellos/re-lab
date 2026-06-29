@@ -59,7 +59,11 @@ def run(session: Session, console: Console) -> None:
 
     if op_opt == "1":
         # Descobrir número de colunas
-        max_cols = int(ask("Tentar até quantas colunas?", "10"))
+        try:
+            max_cols = int(ask("Tentar até quantas colunas?", "10"))
+        except ValueError:
+            console.print("[fail]Valor inválido. Usando padrão: 10[/fail]")
+            max_cols = 10
         console.print(f"\n[info]Iniciando fuzzer de ORDER BY (1 a {max_cols})...[/info]")
         
         with H.make_client(session) as cl:
@@ -85,8 +89,16 @@ def run(session: Session, console: Console) -> None:
 
     elif op_opt == "2":
         # UNION SELECT customizado
-        num_cols = int(ask("Quantidade de colunas detectadas?", "3"))
-        inject_idx = int(ask("Qual índice de coluna é refletido na tela? (1-indexed)", "2"))
+        try:
+            num_cols = int(ask("Quantidade de colunas detectadas?", "3"))
+        except ValueError:
+            console.print("[fail]Valor inválido. Usando padrão: 3[/fail]")
+            num_cols = 3
+        try:
+            inject_idx = int(ask("Qual índice de coluna é refletido na tela? (1-indexed)", "2"))
+        except ValueError:
+            console.print("[fail]Valor inválido. Usando padrão: 2[/fail]")
+            inject_idx = 2
         custom_sql = ask("SQL Query a injetar (ex: database() ou select group_concat(username) from users)", "database()")
         
         # Reconstrói a lista de colunas preenchida com NULLs ou inteiros
@@ -117,8 +129,16 @@ def run(session: Session, console: Console) -> None:
 
     elif op_opt == "3":
         # Extração de Metadados
-        num_cols = int(ask("Quantidade de colunas detectadas?", "3"))
-        inject_idx = int(ask("Qual índice de coluna é refletido na tela? (1-indexed)", "2"))
+        try:
+            num_cols = int(ask("Quantidade de colunas detectadas?", "3"))
+        except ValueError:
+            console.print("[fail]Valor inválido. Usando padrão: 3[/fail]")
+            num_cols = 3
+        try:
+            inject_idx = int(ask("Qual índice de coluna é refletido na tela? (1-indexed)", "2"))
+        except ValueError:
+            console.print("[fail]Valor inválido. Usando padrão: 2[/fail]")
+            inject_idx = 2
         
         console.print(f"\n[info]Metadados disponíveis para {db_type}:[/info]")
         opts = _SQLI_METADATA_PAYLOADS[db_type]
@@ -126,7 +146,11 @@ def run(session: Session, console: Console) -> None:
         for idx, key in enumerate(keys):
             console.print(f"  [{idx + 1}] {key}")
             
-        metadata_opt = int(ask("Escolha a informação a extrair", "1")) - 1
+        try:
+            metadata_opt = int(ask("Escolha a informação a extrair", "1")) - 1
+        except ValueError:
+            console.print("[fail]Valor inválido. Usando padrão: 1[/fail]")
+            metadata_opt = 0
         if metadata_opt < 0 or metadata_opt >= len(keys):
             console.print("[fail]Opção inválida[/fail]")
             return

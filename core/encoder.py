@@ -22,8 +22,20 @@ def hex_encode(text: str, prefix: str = "\\x") -> str:
     return "".join(f"{prefix}{ord(c):02x}" for c in text)
 
 def unicode_encode(text: str) -> str:
-    """Codifica a string usando representações de caracteres Unicode alternativos."""
-    return "".join(f"%u00{ord(c):02x}" if ord(c) < 256 else f"%u{ord(c):04x}" for c in text)
+    """Codifica a string usando representações JavaScript Unicode (\\uXXXX)."""
+    return "".join(f"\\u{ord(c):04x}" for c in text)
+
+def mixed_case(text: str) -> str:
+    """Alterna maiúsculas e minúsculas para bypass de filtros case-sensitive."""
+    return "".join(c.upper() if i % 2 == 0 else c.lower() for i, c in enumerate(text))
+
+def sql_char_encode(text: str) -> str:
+    """Codifica string usando CHAR() SQL para bypass de filtros de aspas."""
+    return "CONCAT(" + ",".join(f"CHAR({ord(c)})" for c in text) + ")"
+
+def json_unicode_encode(text: str) -> str:
+    """Codifica string usando escapes JSON Unicode (\\u003c para <)."""
+    return "".join(f"\\u{ord(c):04x}" for c in text)
 
 def html_encode(text: str, decimal: bool = True) -> str:
     """Codifica a string em entidades HTML (decimal ou hexadecimal)."""
@@ -46,8 +58,12 @@ def encode_all_formats(text: str) -> dict[str, str]:
         "URL Dupla": url_encode(text, double=True),
         "Hex (\\x..)": hex_encode(text, prefix="\\x"),
         "Hex (0x..)": hex_encode(text, prefix="0x"),
-        "Unicode (%u..)": unicode_encode(text),
+        "Unicode (\\u..)": unicode_encode(text),
         "Entidade HTML": html_encode(text),
         "Base64": base64_encode(text),
         "SQL Space Bypass": sql_bypass_spaces(text),
+        "Mixed Case": mixed_case(text),
+        "SQL CHAR()": sql_char_encode(text),
+        "JSON Unicode": json_unicode_encode(text),
     }
+

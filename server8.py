@@ -16,7 +16,7 @@ def index():
         <head><title>SSTI Filter Bypass Challenge</title></head>
         <body>
             <h2>Olá, {name}!</h2>
-            <!-- Dica de Flag: CTF{{sst1_f1lt3r_byp4ss_succ3ss}} -->
+            <!-- Dica de Flag: CTF{{ '{{' }}sst1_f1lt3r_byp4ss_succ3ss{{ '}}' }} -->
         </body>
     </html>
     """

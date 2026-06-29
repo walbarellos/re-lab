@@ -56,7 +56,7 @@ def run(session: Session, console: Console) -> None:
     name, template = _PAYLOAD_TEMPLATES[opt]
     
     # Formata o comando no payload
-    payload_str = template.replace("{cmd}", cmd.replace('"', '\\"'))
+    safe_cmd = cmd.replace('\\', '\\\\').replace('"', '\\"').replace("'", "\\'")\n    payload_str = template.replace("{cmd}", safe_cmd)
 
     console.print("\n" + "="*60)
     console.print(f"[ok]PAYLOAD DE POLUIÇÃO GERADO ({name})[/ok]")

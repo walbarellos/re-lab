@@ -75,7 +75,7 @@ class ParamDiscovery(BaseScanner):
         body_len = len(response.text)
 
         # 1. Se a resposta retornar um código HTTP diferente do baseline
-        if status != self.baseline_status and status not in (404, 500):
+        if status != self.baseline_status and status not in (400, 404, 405, 413, 414, 422, 500, 501, 502, 503):
             self.ctx.session.remember(f"hidden_param_{param_name}", True)
             self.ctx.session.note(f"Parâmetro oculto descoberto: '{param_name}' em {self.path} (HTTP {status})")
             return ScanResult(
@@ -88,7 +88,7 @@ class ParamDiscovery(BaseScanner):
         # 2. Se o tamanho da resposta mudar significativamente (ex: > 10% de variação)
         if self.baseline_len > 0:
             diff_ratio = abs(body_len - self.baseline_len) / self.baseline_len
-            if diff_ratio > 0.05: # Alteração maior que 5% indica comportamento diferenciado
+            if diff_ratio > 0.15: # Alteração maior que 15% indica comportamento diferenciado (reduz FPs de conteúdo dinâmico)
                 self.ctx.session.remember(f"hidden_param_{param_name}", True)
                 self.ctx.session.note(f"Parâmetro oculto descoberto por tamanho de resposta: '{param_name}' ({body_len} bytes vs Baseline {self.baseline_len})")
                 return ScanResult(

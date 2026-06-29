@@ -79,7 +79,7 @@ def make_client(session: Session) -> httpx.Client:
         base_url=session.target,
         headers=headers,
         timeout=session.timeout,
-        follow_redirects=True,
+        follow_redirects=False,
         verify=session.ssl,
         proxy=session.proxy,
     )
@@ -125,7 +125,7 @@ def make_async_client(session: Session) -> httpx.AsyncClient:
         base_url=session.target,
         headers=headers,
         timeout=session.timeout,
-        follow_redirects=True,
+        follow_redirects=False,
         verify=session.ssl,
         proxy=session.proxy,
     )

@@ -6,6 +6,7 @@ Detecta SSTI e vulnerabilidades de injeção de template em múltiplos framework
 
 from __future__ import annotations
 
+import re
 from typing import Iterable, Any
 from ctflab.core.scanner import BaseScanner
 from ctflab.core.models import ScanResult
@@ -60,7 +61,7 @@ class SSTIScanner(BaseScanner):
                         details="SSTI Jinja2 confirmado (multiplicação de string resultou em 7777777)",
                         severity="High"
                     )
-                elif "49" in text:
+                elif re.search(r'\b49\b', text):
                     return ScanResult(
                         success=True,
                         confidence=0.9,
@@ -68,7 +69,7 @@ class SSTIScanner(BaseScanner):
                         severity="High"
                     )
             else:
-                if "49" in text:
+                if re.search(r'\b49\b', text):
                     return ScanResult(
                         success=True,
                         confidence=0.9,

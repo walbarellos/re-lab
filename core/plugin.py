@@ -51,7 +51,9 @@ def _load_module(path: Path) -> ModuleType | None:
         sys.modules[f"ctflab_plugin_{path.stem}"] = mod
         spec.loader.exec_module(mod)  # type: ignore[union-attr]
         return mod
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.getLogger("ctflab.plugins").warning(f"Falha ao carregar plugin '{path.name}': {e}")
         return None
 
 

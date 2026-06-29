@@ -63,7 +63,7 @@ def run(session: Session, console: Console) -> None:
                 # Se a técnica foi PHP Filter, tenta extrair e decodificar o base64 retornado
                 if tech_opt == "2":
                     # Busca por padrões base64 longos no corpo de retorno
-                    b64_match = re.search(r'([A-Za-z0-9+/]{32,}={0,2})', content)
+                    b64_match = re.search(r'(?:^|[\s>])([A-Za-z0-9+/]{40,}={0,2})(?:[\s<]|$)', content)
                     if b64_match:
                         try:
                             decoded = base64.b64decode(b64_match.group(1)).decode('utf-8', errors='replace')

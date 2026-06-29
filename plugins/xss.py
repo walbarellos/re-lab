@@ -30,11 +30,14 @@ def run(session: Session, console: Console) -> None:
     hits = 0
     with H.make_client(session) as cl:
         for p in payloads:
+            status_code = "ERR"
             try:
                 if use_get:
                     r = cl.get(path, params={param: p})
                 else:
                     r = cl.post(path, json={param: p})
+
+                status_code = r.status_code
 
                 # verifica reflexão direta e codificada (HTMLentities)
                 reflected_raw     = p in r.text
@@ -60,7 +63,7 @@ def run(session: Session, console: Console) -> None:
 
             table.add_row(
                 p[:50],
-                f"[{style}]{r.status_code if 'r' in dir() else 'ERR'}[/{style}]",
+                f"[{style}]{status_code}[/{style}]",
                 hit_str,
                 enc_str,
             )

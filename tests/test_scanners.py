@@ -1,11 +1,20 @@
 import sys
 import threading
 import time
-from pathlib import Path
+import socket
+import pathlib
 
 # 1. Configura o PYTHONPATH dinamicamente para importar o ctflab local
-sys.path.insert(0, "/home/walbarellos/Aegis-Arsenal")
-sys.path.insert(0, "/home/walbarellos/Aegis-Arsenal/ctflab/tests/vulnerable_apps/flask_app")
+_PROJECT_ROOT = str(pathlib.Path(__file__).resolve().parent.parent.parent)
+sys.path.insert(0, _PROJECT_ROOT)
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "vulnerable_apps" / "flask_app"))
+
+def _find_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
+
+_TEST_PORT = _find_free_port()
 
 # 2. Inicializa o servidor vulnerável real (Flask) em background
 from app import app as flask_app
@@ -14,10 +23,10 @@ def run_real_server():
     import logging
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
-    flask_app.run(host="127.0.0.1", port=18888, debug=False, use_reloader=False)
+    flask_app.run(host="127.0.0.1", port=_TEST_PORT, debug=False, use_reloader=False)
 
 def main():
-    port = 18888
+    port = _TEST_PORT
     server_thread = threading.Thread(target=run_real_server, daemon=True)
     server_thread.start()
     print(f"[TEST] Servidor real de alta fidelidade (Flask + SQLite) rodando em http://127.0.0.1:{port}")
@@ -100,11 +109,11 @@ def main():
         from ctflab.domains.reconnaissance.port_scanner import PortScanner
         ps = PortScanner(ctx)
         # Vamos injetar a porta do mock server para testar sua detecção
-        ps.get_payloads = lambda: [80, 443, 18888] 
+        ps.get_payloads = lambda: [80, 443, _TEST_PORT] 
         findings = ps.run()
         print(f"[TEST] PortScanner executado. Portas abertas encontradas: {len(findings)}")
         found_ports = [v.payload for v in findings]
-        assert "18888" in found_ports, "PortScanner falhou em detectar a porta aberta do Mock Target!"
+        assert str(_TEST_PORT) in found_ports, f"PortScanner falhou em detectar a porta aberta do Mock Target ({_TEST_PORT})!"
         print(f"[TEST] PortScanner validado com sucesso!")
 
         # 10. Testa o WafCharFuzzer
